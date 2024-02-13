@@ -1,0 +1,56 @@
+# Originally from # https://github.com/replicate/cog-serving/blob/5e9017a6e94a965364cc4bc895f16c9b2c45ecd3/pkg/kubernetes/helm-charts/helm-redis-values-production.yaml
+# - see further git history there
+
+## Bitnami Redis image version
+## ref: https://hub.docker.com/r/bitnami/redis/tags/
+##
+image:
+  registry: docker.io
+  repository: bitnami/redis
+  tag: 7.0.11
+
+architecture: standalone
+
+## Specifies the Kubernetes Cluster's Domain Name.
+clusterDomain: cluster.local
+
+auth:
+  enabled: true
+  existingSecret: "redis"
+  usePasswordFiles: false
+
+master:
+  containerPorts:
+    redis: 6378
+  service:
+    ports:
+      redis: 6378
+  resources:
+    limits:
+      memory: 8Gi
+      cpu: "8"
+  persistence:
+    enabled: true
+    ## @param master.persistence.medium Provide a medium for `emptyDir` volumes.
+    ##
+    medium: ""
+    sizeLimit: ""
+    size: 8Gi
+
+tls:
+  enabled: true
+  authClients: false
+  existingSecret: redis-tls
+  certFilename: tls.crt
+  certKeyFilename: tls.key
+  certCAFilename: ca.crt
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+## we disable AOF because that consumes lots of disk
+commonConfiguration: |-
+  appendonly no
+  save 60 1000

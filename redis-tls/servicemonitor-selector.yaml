@@ -1,0 +1,5 @@
+# Ensure kustomize treats ServiceMonitor selectors the same as any
+# other
+commonLabels:
+- kind: ServiceMonitor
+  path: spec/selector/matchLabels

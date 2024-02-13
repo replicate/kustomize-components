@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Generate an empty configmap, to be replaced in overlays, to help
+# kustomize know how to update configMapKeyRefs
+configMapGenerator:
+- name: redis
+
+# Generate empty secrets, to be replaced in overlays, to help
+# kustomize know how to update secretKeyRefs
+secretGenerator:
+- name: redis
+  type: Opaque
+
+helmCharts:
+- name: redis
+  repo: oci://registry-1.docker.io/bitnamicharts
+  releaseName: redis
+  version: 17.11.3
+  valuesFile: values.yaml
+
+# remove the namespaceSelector from the ServiceMonitor so that it just
+# matches the same namespace as the ServiceMonitor
+#
+# this means that when kustomize sets the namespace on everything, the
+# ServiceMonitor will still work without having to also be patched
+patches:
+- patch: |-
+    - op: remove
+      path: /spec/namespaceSelector
+  target:
+    kind: ServiceMonitor
+
+configurations:
+- servicemonitor-selector.yaml
+
+resources:
+- prometheus-ingress-networkpolicy.yaml
