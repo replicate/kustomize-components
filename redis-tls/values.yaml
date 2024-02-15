@@ -49,6 +49,8 @@ metrics:
   enabled: true
   serviceMonitor:
     enabled: true
+  extraArgs:
+    skip-tls-verification: "true"
 
 ## we disable AOF because that consumes lots of disk
 commonConfiguration: |-
