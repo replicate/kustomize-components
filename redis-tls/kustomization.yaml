@@ -11,6 +11,8 @@ configMapGenerator:
 secretGenerator:
 - name: redis
   type: Opaque
+  options:
+    disableNameSuffixHash: true
 
 helmCharts:
 - name: redis
