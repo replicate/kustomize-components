@@ -28,7 +28,7 @@ master:
   resources:
     limits:
       memory: 8Gi
-      cpu: "8"
+      cpu: "2"
   persistence:
     enabled: true
     ## @param master.persistence.medium Provide a medium for `emptyDir` volumes.
