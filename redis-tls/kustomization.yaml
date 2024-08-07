@@ -35,7 +35,9 @@ patches:
     kind: ServiceMonitor
 
 configurations:
+- name-prefix.yaml
 - servicemonitor-selector.yaml
 
 resources:
+- certificate.yaml
 - prometheus-ingress-networkpolicy.yaml
