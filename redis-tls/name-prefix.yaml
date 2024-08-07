@@ -1,0 +1,6 @@
+namePrefix:
+- path: metadata/name
+- kind: Certificate
+  path: spec/secretName
+- kind: StatefulSet
+  path: spec/template/spec/volumes[]/secret/secretName
