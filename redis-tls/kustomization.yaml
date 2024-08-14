@@ -6,6 +6,10 @@ kind: Kustomization
 configMapGenerator:
 - name: redis
 
+- name: redis-r8-scripts
+  files:
+  - reload-certs.sh
+
 # Generate empty secrets, to be replaced in overlays, to help
 # kustomize know how to update secretKeyRefs
 secretGenerator:
@@ -41,3 +45,4 @@ configurations:
 resources:
 - certificate.yaml
 - prometheus-ingress-networkpolicy.yaml
+- reload-redis-certs.yaml
