@@ -35,7 +35,7 @@ master:
     ##
     medium: ""
     sizeLimit: ""
-    size: 8Gi
+    size: 32Gi
 
 tls:
   enabled: true
@@ -52,7 +52,8 @@ metrics:
   extraArgs:
     skip-tls-verification: "true"
 
-## we disable AOF because that consumes lots of disk
+# Most of our redises are used as lookaside caches, for which RDB is usually a
+# more appropriate choice than AOF.
 commonConfiguration: |-
   appendonly no
-  save 60 1000
+  save 3600 1 300 100 60 10000
