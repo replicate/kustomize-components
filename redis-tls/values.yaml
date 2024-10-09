@@ -57,3 +57,6 @@ metrics:
 commonConfiguration: |-
   appendonly no
   save 3600 1 300 100 60 10000
+
+  maxmemory 7gb
+  maxmemory-policy allkeys-lru
