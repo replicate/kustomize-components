@@ -26,7 +26,7 @@ master:
     ports:
       redis: 6378
   resources:
-    limits:
+    requests:
       memory: 8Gi
       cpu: "2"
   persistence:
