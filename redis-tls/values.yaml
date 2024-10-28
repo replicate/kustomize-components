@@ -26,6 +26,15 @@ master:
     ports:
       redis: 6378
   resources:
+    # It might be nice in theory to use requests and no limits for redis, as it
+    # can mostly be trusted to not use much more than two cores and its assigned
+    # `maxmemory` configuration value, and we would rather redis were not
+    # OOM-killed by the kernel.
+    #
+    # In practice, not applying limits means that the pod will be assigned a QoS
+    # class of "Burstable" rather than "Guaranteed", which increases the chances
+    # of it being evicted due to node pressure, particularly if it is
+    # momentarily exceeding its memory or CPU requests.
     limits:
       memory: 8Gi
       cpu: "2"
