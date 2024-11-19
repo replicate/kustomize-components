@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis
+spec:
+  endpoints:
+  - interval: 30s
+    port: http-metrics
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: metrics
+      app.kubernetes.io/instance: redis
+      app.kubernetes.io/name: redis
