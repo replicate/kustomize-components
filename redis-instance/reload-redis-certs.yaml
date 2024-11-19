@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reload-redis-certs
+  namespace: services
+spec:
+  # every 3 hours at 12 past the hour
+  schedule: "12 */3 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: reload-redis-certs
+            image: alpine:3.19
+            command:
+            - /srv/redis-scripts/reload-certs.sh
+            env:
+            - name: REDISCLI_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: redis-password
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: redis
+                  key: address
+            volumeMounts:
+            - mountPath: /srv/redis-ca-bundle
+              name: redis-bundle
+              readOnly: true
+            - mountPath: /srv/redis-scripts
+              name: redis-scripts
+              readOnly: true
+          imagePullSecrets:
+          - name: regcred-replicate-production-us
+          restartPolicy: OnFailure
+          volumes:
+          - configMap:
+              defaultMode: 493 # 0755
+              name: redis-r8-scripts
+            name: redis-scripts
+          - configMap:
+              defaultMode: 420 # 0644
+              name: redis-bundle
+              optional: true
+            name: redis-bundle

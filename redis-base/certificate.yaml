@@ -7,4 +7,3 @@ spec:
   dnsNames:
   - redis-master.services.svc.cluster.local
   secretName: redis-tls
-  
