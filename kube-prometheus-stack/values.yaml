@@ -1,0 +1,102 @@
+alertmanager:
+  enabled: false
+
+grafana:
+  enabled: false
+
+prometheus:
+  enabled: true
+
+  prometheusSpec:
+    enableFeatures:
+    - auto-gomaxprocs
+    - auto-gomemlimit
+    resources:
+      limits:
+        cpu: 8
+        memory: 32Gi
+    podMonitorSelector:
+      matchExpressions:
+      - key: source-repo
+        operator: Exists
+    serviceMonitorSelector:
+      matchExpressions:
+      - key: source-repo
+        operator: Exists
+    retention: 60d
+    retentionSize: 900GiB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Ti
+
+defaultRules:
+  create: true
+  rules:
+    # enabled
+
+    configReloaders: true
+    general: true
+    k8sContainerCpuUsageSecondsTotal: true
+    k8sContainerMemoryCache: true
+    k8sContainerMemoryRss: true
+    k8sContainerMemorySwap: true
+    k8sContainerResource: true
+    k8sContainerMemoryWorkingSetBytes: true
+    k8sPodOwner: true
+    kubelet: true
+    kubeProxy: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeStateMetrics: true
+    network: true
+    node: true
+    prometheus: true
+    prometheusOperator: true
+
+    # disabled
+
+    alertmanager: false
+    etcd: false
+    kubeApiserverAvailability: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: false
+    kubeApiserverSlos: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    nodeExporterAlerting: false
+    nodeExporterRecording: false
+    windows: false
+
+# enabled ServiceMonitors
+coreDns:
+  enabled: true
+kubelet:
+  enabled: true
+kubeProxy:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
+kube-state-metrics:
+  metricAnnotationsAllowList:
+  - pods=[replicate/model_name,replicate/username,replicate/version_id]
+
+# disabled ServiceMonitors
+kubeApiServer:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+nodeExporter:
+  enabled: false
