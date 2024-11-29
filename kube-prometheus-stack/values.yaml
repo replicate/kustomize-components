@@ -77,11 +77,7 @@ defaultRules:
     windows: false
 
 # enabled ServiceMonitors
-coreDns:
-  enabled: true
 kubelet:
-  enabled: true
-kubeProxy:
   enabled: true
 kubeStateMetrics:
   enabled: true
@@ -90,6 +86,10 @@ kube-state-metrics:
   - pods=[replicate/model_name,replicate/username,replicate/version_id]
 
 # disabled ServiceMonitors
+coreDns:
+  enabled: false
+kubeProxy:
+  enabled: false
 kubeApiServer:
   enabled: false
 kubeControllerManager:
