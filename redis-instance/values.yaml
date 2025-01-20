@@ -40,11 +40,16 @@ master:
       cpu: "2"
   persistence:
     enabled: true
-    ## @param master.persistence.medium Provide a medium for `emptyDir` volumes.
-    ##
+    # path: /data is the default value in the upstream chart, but we set it
+    # explicitly to match preExecCmds below
+    path: /data
     medium: ""
     sizeLimit: ""
     size: 32Gi
+
+  preExecCmds:
+  # clean up any interrupted RDB snapshots
+  - rm /data/temp-*.rdb
 
 tls:
   enabled: true
