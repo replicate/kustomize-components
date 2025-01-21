@@ -47,9 +47,8 @@ master:
     sizeLimit: ""
     size: 32Gi
 
-  preExecCmds:
   # clean up any interrupted RDB snapshots
-  - rm /data/temp-*.rdb
+  preExecCmds: "rm /data/temp-*.rdb"
 
 tls:
   enabled: true
