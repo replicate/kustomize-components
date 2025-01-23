@@ -46,9 +46,14 @@ master:
     medium: ""
     sizeLimit: ""
     size: 32Gi
+  persistentVolumeClaimRetentionPolicy:
+    enabled: true
+    whenDeleted: Delete
+    whenScaled: Delete
 
   # clean up any interrupted RDB snapshots
-  preExecCmds: "rm /data/temp-*.rdb"
+  preExecCmds:
+  - "rm /data/temp-*.rdb"
 
 tls:
   enabled: true
