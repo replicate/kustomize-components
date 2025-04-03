@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Start the replication coordinator script in the background
+echo "Starting replication coordinator"
+/bin/bash /opt/valkey/entrypoint/replication-coordinator &
+
+# Start the Valkey server
+echo "Starting Valkey server"
+/usr/local/bin/docker-entrypoint.sh --user valkey "$@"

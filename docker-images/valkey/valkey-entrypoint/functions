@@ -1,0 +1,30 @@
+#!/bin/bash
+run_sentinel_cmd() {
+    local sentinel_host="$1"
+    shift
+    local cmd_output
+    cmd_output=$(valkey-cli -h "$sentinel_host" -p 26379 sentinel "$@")
+    
+    if [[ "$cmd_output" != "OK" ]]; then
+        echo "Sentinel command failed at $sentinel_host: $* => $cmd_output" >&2
+        return 1
+    fi
+}
+
+get_sentinel_quorum() {
+    local required="$1"
+
+    if ! [[ "$required" =~ ^[0-9]+$ ]]; then
+        echo "Invalid sentinel count, must be integer: $required" >&2
+        exit 1
+    fi
+
+    (( required <= 0 )) && {
+        echo "Invalid sentinel count, must be positive non-zero: $required" >&2
+        exit 1
+    }
+
+    (( required /= 2 ))
+    (( required += 1 ))
+    echo "$required"
+}

@@ -1,0 +1,30 @@
+global:
+  namespace: valkey
+
+sentinel:
+  storage:
+    size: 100Mi
+  replicas: 3
+
+valkey:
+  image: valkey:replicate-latest
+  servers:
+  - name: testme
+    replicas: 2
+    storage:
+      size: 200Mi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
+  - name: omg
+    replicas: 2
+    down_after_milliseconds: 3000
+    failover_timeout: 10000
+    parallel_syncs: 1
+    storage:
+      size: 200Mi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
