@@ -2,6 +2,7 @@ global:
   namespace: valkey
 
 sentinel:
+  image: valkey:replicate-latest
   storage:
     size: 100Mi
   replicas: 3

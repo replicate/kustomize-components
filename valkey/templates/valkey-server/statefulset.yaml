@@ -1,8 +1,5 @@
 {{- $required_sentinels := int .Values.sentinel.replicas }}
 {{- range $_index, $server := .Values.valkey.servers }}
-{{- if eq $server.name "sentinel" }}
-{{- fail "The value 'sentinel' is not allowed for `.Values.valkey.servers.name`, it is reserved for the sentinel service" }}
-{{- end }}
 {{- $service_name := printf "valkey-server-%s" $server.name }}
 ---
 apiVersion: apps/v1
@@ -11,7 +8,8 @@ metadata:
   name: valkey-{{ $server.name }}
   namespace: {{ $.Values.global.namespace }}
   labels:
-    app.kubernetes.io/name: valkey-{{ $server.name }}
+    app.kubernetes.io/name: valkey
+    app.kubernetes.io/instance: valkey-{{ $server.name }}
     app.kubernetes.io/component: valkey-server
     app.kubernetes.io/part-of: valkey
 spec:
@@ -19,33 +17,40 @@ spec:
   replicas: {{ default 2 $server.replicas | int }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: valkey-{{ $server.name }}
+      app.kubernetes.io/name: valkey
+      app.kubernetes.io/instance: valkey-{{ $server.name }}
       app.kubernetes.io/component: valkey-server
       app.kubernetes.io/part-of: valkey
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: valkey-{{ $server.name }}
+        app.kubernetes.io/name: valkey
+        app.kubernetes.io/instance: valkey-{{ $server.name }}
         app.kubernetes.io/component: valkey-server
         app.kubernetes.io/part-of: valkey
     spec:
       securityContext:
         fsGroup: 1000
 
-      {{- if and (hasKey $.Values.global "topology_spread_constraints") ($.Values.global.topology_spread_constraints.enabled) }}
       topologySpreadConstraints:
         - labelSelector:
             matchLabels:
-              app.kubernetes.io/name: valkey-{{ $server.name }}
+              app.kubernetes.io/name: valkey
+              app.kubernetes.io/instance: valkey-{{ $server.name }}
+              app.kubernetes.io/component: valkey-server
+              app.kubernetes.io/part-of: valkey
           maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: DoNotSchedule
-      {{- end }}
 
       initContainers:
       - name: valkey-configuration
         image: alpine:latest
-
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         command: ["sh", "-c"]
         args:
           - |
@@ -56,6 +61,7 @@ spec:
             echo "appendonly no" >> /opt/valkey/etc/valkey.conf
             echo "save 3600 1 300 100 60 10000" >> /opt/valkey/etc/valkey.conf
             echo "maxmemory-policy allkeys-lru" >> /opt/valkey/etc/valkey.conf
+            echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}.valkey.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
 
         volumeMounts:
           - name: etc
@@ -63,7 +69,7 @@ spec:
 
       containers:
       - name: valkey-server
-        image: {{ $.Values.valkey.image }}
+        image: {{ default "valkey/valkey:8.1-alpine" $.Values.valkey.image }}
         imagePullPolicy: IfNotPresent
 
         args:
@@ -87,12 +93,18 @@ spec:
           capabilities:
             drop: ["ALL"]
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: VALKEY_NODE_TYPE
+          value: "valkey"
         - name: VALKEY_NAME
           value: {{ $server.name }}
         - name: VALKEY_SERVICE_NAME
           value: {{ $service_name }}
         - name: VALKEY_SENTINEL_SERVICE_SRV
-          value: _sentinel._tcp.valkey-sentinel-headless.valkey.svc.cluster.local
+          value: _sentinel._tcp.valkey-sentinel.valkey.svc.cluster.local
         - name: VALKEY_REQUIRED_SENTINELS
           value: "{{ int $required_sentinels }}"
         - name: VALKEY_DOWN_AFTER_MILLISECONDS
@@ -101,6 +113,10 @@ spec:
           value: "{{ default 10000 $server.failover_timeout | int }}"
         - name: VALKEY_PARALLEL_SYNCS
           value: "{{ default 1 $server.parallel_syncs | int }}"
+        {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+        - name: VALKEY_TLS_ENABLED
+          value: "true"
+        {{- end }}
 
         readinessProbe:
           exec:

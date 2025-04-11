@@ -1,9 +1,22 @@
 #!/bin/bash
+STARTUP_TIMEOUT=${STARTUP_TIMEOUT:-120}
+
+common_args="-e"
+export common_args
+
+if [ "${VALKEY_TLS_ENABLED:-}" == "true" ]; then
+    common_args="$common_args --tls"
+
+    if [ -e /srv/valkey-ca-bundle/ca-certs.crt ]; then
+        common_args="$common_args --cacert /srv/valkey-ca-bundle/ca-certs.crt"
+    fi
+fi
+
 run_sentinel_cmd() {
     local sentinel_host="$1"
     shift
     local cmd_output
-    cmd_output=$(valkey-cli -h "$sentinel_host" -p 26379 sentinel "$@")
+    cmd_output=$(valkey-cli -e $([ -z "${VALKEY_TLS_ENABLED:-}" ] && echo "--insecure") -h "$sentinel_host" -p 26379 sentinel "$@")
     
     if [[ "$cmd_output" != "OK" ]]; then
         echo "Sentinel command failed at $sentinel_host: $* => $cmd_output" >&2
@@ -27,4 +40,18 @@ get_sentinel_quorum() {
     (( required /= 2 ))
     (( required += 1 ))
     echo "$required"
+}
+
+
+wait_for_valkey() {
+    echo "Waiting for Valkey Server to be ready"
+    local timeout=$((SECONDS + STARTUP_TIMEOUT))
+
+    until valkey-cli $common_args -p "${VALKEY_PORT:-6379}" ping; do
+        if (( SECONDS >= timeout )); then
+            echo "Valkey server at $host:$port did not start in $timeout seconds" >&2
+            exit 1
+        fi
+        sleep 1
+    done
 }

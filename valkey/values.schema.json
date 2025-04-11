@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["global", "valkey", "sentinel", "envoy"],
+    "required": ["global", "valkey", "sentinel"],
     "properties": {
       "global": {
         "type": "object",
@@ -10,33 +10,6 @@
           "namespace": {
             "type": "string",
             "description": "The namespace for the Valkey deployment."
-          },
-          "topology_spread_constraints": {
-            "type": "object",
-            "required": ["enabled", "label_selector", "max_skew", "topology_key", "when_unsatisfiable"],
-            "properties": {
-              "enabled": {
-                "type": "boolean",
-                "default": false,
-                "description": "Enable topology spread constraints for the Valkey deployment."
-              },
-              "label_selector": {
-                "type": "string",
-                "description": "The label selector for the topology spread constraints."
-              },
-              "max_skew": {
-                "type": "integer",
-                "description": "The maximum skew for the topology spread constraints."
-              },
-              "topology_key": {
-                "type": "string",
-                "description": "The topology key for the topology spread constraints."
-              },
-              "when_unsatisfiable": {
-                "type": "string",
-                "description": "The action to take when the topology spread constraints are not satisfied."
-              }
-            }
           }
         }
       },
@@ -59,6 +32,20 @@
                   "type": "string",
                   "pattern": "^[a-zA-Z0-9_-]+$",
                   "description": "The name of the Valkey server. Must be a valid DNS subdomain name."
+                },
+                "tls": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": true,
+                      "description": "Enable TLS for the Valkey server. This assumes that cert-manager is utilized to generate the TLS certificate and key."
+                    },
+                    "secret_name": {
+                      "type": "string",
+                      "description": "The name of the secret containing the TLS certificate and key for the Valkey server. This should only be used to override the auto-generated secret name."
+                    }
+                  }
                 },
                 "resources": {
                   "type": "object",
@@ -139,6 +126,24 @@
             "type": "integer",
             "default": 3,
             "description": "The number of replicas for the Sentinel, defaults to 3."
+          },
+          "image": {
+            "type": "string",
+            "description": "The image for the Sentinel, defaults to valkey/valkey:8.1-alpine."
+          },
+          "tls": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "Enable TLS for the Sentenel server. This assumes that cert-manager is utilized to generate the TLS certificate and key."
+              },
+              "secret_name": {
+                "type": "string",
+                "description": "The name of the secret containing the TLS certificate and key for the Sentinel server. This should only be used to override the auto-generated secret name."
+              }
+            }
           }
         }
       }
