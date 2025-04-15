@@ -16,7 +16,10 @@ run_sentinel_cmd() {
     local sentinel_host="$1"
     shift
     local cmd_output
-    cmd_output=$(valkey-cli -e $([ -z "${VALKEY_TLS_ENABLED:-}" ] && echo "--insecure") -h "$sentinel_host" -p 26379 sentinel "$@")
+    local VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
+    local REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
+    
+    cmd_output=$(valkey-cli $common_args -h "$sentinel_host" -p 26379 sentinel "$@")
     
     if [[ "$cmd_output" != "OK" ]]; then
         echo "Sentinel command failed at $sentinel_host: $* => $cmd_output" >&2
@@ -42,6 +45,33 @@ get_sentinel_quorum() {
     echo "$required"
 }
 
+
+get_master_addr_by_name() {
+    local sentinel_host="$1"
+    local valkey_name="$2"
+    local VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
+    local REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
+
+    output=$(valkey-cli $common_args --json -h "$sentinel_host" -p 26379 sentinel get-master-addr-by-name "$valkey_name")
+    echo "$output"
+}
+
+wait_for_sentinel() {
+    local sentinel_host="$1"
+    local VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
+    local REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
+
+    echo "Waiting for Valkey Sentinel to be ready"
+    local timeout=$((SECONDS + STARTUP_TIMEOUT))
+
+    until valkey-cli $common_args -h "$sentinel_host" -p 26379 ping; do
+        if (( SECONDS >= timeout )); then
+            echo "Valkey sentinel at $sentinel_host:26379 did not start in $timeout seconds" >&2
+            exit 1
+        fi
+        sleep 1
+    done
+}
 
 wait_for_valkey() {
     echo "Waiting for Valkey Server to be ready"

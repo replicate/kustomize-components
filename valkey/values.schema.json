@@ -26,7 +26,7 @@
             "minItems": 1,
             "items": {
               "type": "object",
-              "required": ["name"],
+              "required": ["name", "password_secret"],
               "properties": {
                 "name": {
                   "type": "string",
@@ -103,6 +103,10 @@
                   "default": 1,
                   "description": "The number of slaves that can be reconfigured as slaves of another master after a failover. Defaults to 1."
                 },
+                "password_secret": {
+                  "type": "string",
+                  "description": "The name of the secret containing the password for the Valkey server. This is used for clients, including replicas and Sentinels, to authenticate to the server."
+                },
                 "storage": {
                   "type": "object",
                   "properties": {
@@ -120,7 +124,7 @@
       },
       "sentinel": {
         "type": "object",
-        "required": ["replicas"],
+        "required": ["replicas", "password_secret"],
         "properties": {
           "replicas": {
             "type": "integer",
@@ -130,6 +134,10 @@
           "image": {
             "type": "string",
             "description": "The image for the Sentinel, defaults to valkey/valkey:8.1-alpine."
+          },
+          "password_secret": {
+            "type": "string",
+            "description": "The name of the secret containing the password for the Sentinel. This is used for clients, including Valkey servers and Sentinel peers, to authenticate to the server."
           },
           "tls": {
             "type": "object",

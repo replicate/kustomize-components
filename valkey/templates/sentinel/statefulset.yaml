@@ -42,6 +42,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.sentinel.password_secret }}
+              key: password
+        - name: REDISCLI_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.sentinel.password_secret }}
+              key: password
         image: alpine:latest
         command: ["sh", "-c"]
         args:
@@ -50,7 +60,7 @@ spec:
             echo "sentinel resolve-hostnames yes" >> /data/sentinel.conf
             echo "sentinel announce-hostnames yes" >> /data/sentinel.conf
             echo "sentinel announce-ip ${POD_NAME}.valkey-sentinel.valkey.svc.cluster.local" >> /data/sentinel.conf
-            #echo "sentinel requirepass {{ .Values.sentinel.password }}" >> /data/sentinel.conf
+            echo "requirepass ${VALKEY_PASSWORD}" >> /data/sentinel.conf
             chown 999:1000 /data/sentinel.conf
           fi
 
@@ -70,15 +80,37 @@ spec:
         - name: VALKEY_PORT
           value: "26379"
         {{- if and (hasKey $.Values.sentinel "tls") (hasKey $.Values.sentinel.tls "enabled") (eq $.Values.sentinel.tls.enabled true) }}
-        - name: VALKEY_TLS_ENABLED
+        - name: VALKEY_TLS
           value: "true"
+        - name: VALKEY_CACERT
+          value: /opt/valkey/etc/certs/ca.crt
+        - name: VALKEY_CERT_FILE
+          value: /opt/valkey/etc/certs/tls.crt
+        - name: VALKEY_KEY_FILE
+          value: /opt/valkey/etc/certs/tls.key
         {{- end }}
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.sentinel.password_secret }}
+              key: password
+        - name: REDISCLI_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.sentinel.password_secret }}
+              key: password
         image: {{ default "valkey/valkey:8.1-alpine" $.Values.sentinel.image }}
         imagePullPolicy: IfNotPresent
 
         args: 
         - /usr/local/bin/valkey-sentinel
         - /data/sentinel.conf
+        {{- if and (hasKey $.Values.sentinel "tls") (hasKey $.Values.sentinel.tls "enabled") (eq $.Values.sentinel.tls.enabled true) }}
+        - --tls
+        - --tls-ca-file ${VALKEY_CACERT}
+        - --tls-cert-file ${VALKEY_CERT_FILE}
+        - --tls-key-file ${VALKEY_KEY_FILE}
+        {{- end }}
 
         securityContext:
           runAsUser: 999
@@ -91,11 +123,20 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+        {{- if and (hasKey $.Values.sentinel "tls") (hasKey $.Values.sentinel.tls "enabled") (eq $.Values.sentinel.tls.enabled true) }}
+        - name: certs
+          mountPath: /opt/valkey/etc/certs
+        {{- end }}
 
         resources:
           requests:
             cpu: 10m
             memory: 32Mi
+      
+      volumes:
+      - name: certs
+        secret:
+          secretName: valkey-sentinel-tls
 
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Delete

@@ -51,6 +51,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.password_secret }}
+              key: password
         command: ["sh", "-c"]
         args:
           - |
@@ -62,6 +67,8 @@ spec:
             echo "save 3600 1 300 100 60 10000" >> /opt/valkey/etc/valkey.conf
             echo "maxmemory-policy allkeys-lru" >> /opt/valkey/etc/valkey.conf
             echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}.valkey.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
+            echo "requirepass ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
+            echo "primaryauth ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
 
         volumeMounts:
           - name: etc
@@ -75,12 +82,22 @@ spec:
         args:
         - --include /opt/valkey/etc/master.conf
         - --include /opt/valkey/etc/valkey.conf
+        {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+        - --tls
+          - --tls-ca-file ${VALKEY_CACERT}
+          - --tls-cert-file ${VALKEY_CERT_FILE}
+        - --tls-key-file ${VALKEY_KEY_FILE}
+        {{- end }}
 
         volumeMounts:
           - name: data
             mountPath: /data
           - name: etc
             mountPath: /opt/valkey/etc
+          {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+          - name: certs
+            mountPath: /opt/valkey/etc/certs
+          {{- end }}
 
         resources:
           {{- toYaml $server.resources | nindent 12 }}
@@ -114,9 +131,30 @@ spec:
         - name: VALKEY_PARALLEL_SYNCS
           value: "{{ default 1 $server.parallel_syncs | int }}"
         {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
-        - name: VALKEY_TLS_ENABLED
+        - name: VALKEY_TLS
           value: "true"
+        - name: VALKEY_CACERT
+          value: /opt/valkey/etc/certs/ca.crt
+        - name: VALKEY_CERT_FILE
+          value: /opt/valkey/etc/certs/tls.crt
+        - name: VALKEY_KEY_FILE
+          value: /opt/valkey/etc/certs/tls.key
         {{- end }}
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.password_secret }}
+              key: password
+        - name: REDISCLI_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.password_secret }}
+              key: password
+        - name: VALKEY_SENTINEL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.sentinel.password_secret }}
+              key: password
 
         readinessProbe:
           exec:
@@ -125,6 +163,11 @@ spec:
       volumes:
       - name: etc
         emptyDir: {}
+      {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+      - name: certs
+        secret:
+          secretName: valkey-server-{{ $server.name }}-tls
+      {{- end }}
 
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Delete
