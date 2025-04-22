@@ -18,16 +18,16 @@ MASTER=$(get_master_addr_by_name "valkey-sentinel" "${VALKEY_NAME}")
 if [[ "${MASTER}" == "null" ]]; then
     echo "No Master found, configuring self as master"
     while true; do
-    REQUIRED_SENTINELS="${VALKEY_REQUIRED_SENTINELS}"
-    SENTINELS=$(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }' | sort -u)
-    SENTINEL_COUNT=$(echo "${SENTINELS}" | wc -l)
-    if (( SENTINEL_COUNT >= REQUIRED_SENTINELS )); then
-        echo "Found ${SENTINEL_COUNT} Sentinels, proceeding with the setup."
-        break
-    else
-        echo "Waiting for more Sentinels to come up... (found ${SENTINEL_COUNT}, waiting for ${REQUIRED_SENTINELS})"
-        sleep 1
-    fi
+        REQUIRED_SENTINELS="${VALKEY_REQUIRED_SENTINELS}"
+        SENTINELS=$(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }' | sort -u)
+        SENTINEL_COUNT=$(echo "${SENTINELS}" | wc -l)
+        if ((SENTINEL_COUNT >= REQUIRED_SENTINELS)); then
+            echo "Found ${SENTINEL_COUNT} Sentinels, proceeding with the setup."
+            break
+        else
+            echo "Waiting for more Sentinels to come up... (found ${SENTINEL_COUNT}, waiting for ${REQUIRED_SENTINELS})"
+            sleep 1
+        fi
     done
 
     valkey-cli $common_args -p 6379 REPLICAOF no one
@@ -40,18 +40,18 @@ if [[ "${MASTER}" == "null" ]]; then
     [[ "${VALKEY_FAILOVER_TIMEOUT}" -ne "0" ]] && echo "Setting failover-timeout to ${VALKEY_FAILOVER_TIMEOUT}"
     [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]] && echo "Setting parallel-syncs to ${VALKEY_PARALLEL_SYNCS}"
     for SENTINEL in ${SENTINELS_LIST}; do
-    FQDN="${HOSTNAME}.${VALKEY_SERVICE_NAME}.valkey.svc.cluster.local"
-    echo "Notifying Sentinel at ${SENTINEL} master of ${VALKEY_NAME} at '${FQDN}'"
-    run_sentinel_cmd "${SENTINEL}" monitor "${VALKEY_NAME}" "${FQDN}" 6379 "${SENTINEL_QUORUM}"
-    if [[ "${VALKEY_DOWN_AFTER_MILLISECONDS}" -ne "0" ]]; then
-        run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" down-after-milliseconds "${VALKEY_DOWN_AFTER_MILLISECONDS}"
-    fi
-    if [[ "${VALKEY_FAILOVER_TIMEOUT}" -ne "0" ]]; then
-        run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" failover-timeout "${VALKEY_FAILOVER_TIMEOUT}"
-    fi
-    if [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]]; then
-        run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" parallel-syncs "${VALKEY_PARALLEL_SYNCS}"
-    fi
+        FQDN="${HOSTNAME}.${VALKEY_SERVICE_NAME}.valkey.svc.cluster.local"
+        echo "Notifying Sentinel at ${SENTINEL} master of ${VALKEY_NAME} at '${FQDN}'"
+        run_sentinel_cmd "${SENTINEL}" monitor "${VALKEY_NAME}" "${FQDN}" 6379 "${SENTINEL_QUORUM}"
+        if [[ "${VALKEY_DOWN_AFTER_MILLISECONDS}" -ne "0" ]]; then
+            run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" down-after-milliseconds "${VALKEY_DOWN_AFTER_MILLISECONDS}"
+        fi
+        if [[ "${VALKEY_FAILOVER_TIMEOUT}" -ne "0" ]]; then
+            run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" failover-timeout "${VALKEY_FAILOVER_TIMEOUT}"
+        fi
+        if [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]]; then
+            run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" parallel-syncs "${VALKEY_PARALLEL_SYNCS}"
+        fi
     done
 else
     until [[ "${MASTER}" != "null" ]]; do

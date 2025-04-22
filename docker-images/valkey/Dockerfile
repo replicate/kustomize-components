@@ -7,4 +7,3 @@ COPY valkey-entrypoint/ /opt/valkey/entrypoint/
 RUN chmod +x /opt/valkey/entrypoint/*
 
 ENTRYPOINT ["/opt/valkey/entrypoint/entrypoint"]
-

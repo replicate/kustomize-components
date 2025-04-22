@@ -30,4 +30,3 @@ while $running; do
     # We can connect to the local redis instance to reload the cert as this run on each valkey instance
     valkey-cli $common_args --raw CONFIG GET tls-key-file | tail -n1 | head -c -1 | valkey-cli $common_args -x CONFIG SET tls-key-file
 done
-

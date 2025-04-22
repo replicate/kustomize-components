@@ -16,11 +16,10 @@ run_sentinel_cmd() {
     local sentinel_host="$1"
     shift
     local cmd_output
-    local VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
-    local REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
-    
+
+    # shellcheck disable=SC2086
     cmd_output=$(valkey-cli $common_args -h "$sentinel_host" -p 26379 sentinel "$@")
-    
+
     if [[ "$cmd_output" != "OK" ]]; then
         echo "Sentinel command failed at $sentinel_host: $* => $cmd_output" >&2
         return 1
@@ -35,37 +34,34 @@ get_sentinel_quorum() {
         exit 1
     fi
 
-    (( required <= 0 )) && {
+    ((required <= 0)) && {
         echo "Invalid sentinel count, must be positive non-zero: $required" >&2
         exit 1
     }
 
-    (( required /= 2 ))
-    (( required += 1 ))
+    ((required /= 2))
+    ((required += 1))
     echo "$required"
 }
-
 
 get_master_addr_by_name() {
     local sentinel_host="$1"
     local valkey_name="$2"
-    local VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
-    local REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
 
+    # shellcheck disable=SC2086
     output=$(valkey-cli $common_args --json -h "$sentinel_host" -p 26379 sentinel get-master-addr-by-name "$valkey_name")
     echo "$output"
 }
 
 wait_for_sentinel() {
     local sentinel_host="$1"
-    local VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
-    local REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
 
     echo "Waiting for Valkey Sentinel to be ready"
     local timeout=$((SECONDS + STARTUP_TIMEOUT))
 
+    # shellcheck disable=SC2086
     until valkey-cli $common_args -h "$sentinel_host" -p 26379 ping; do
-        if (( SECONDS >= timeout )); then
+        if ((SECONDS >= timeout)); then
             echo "Valkey sentinel at $sentinel_host:26379 did not start in $timeout seconds" >&2
             exit 1
         fi
@@ -74,12 +70,14 @@ wait_for_sentinel() {
 }
 
 wait_for_valkey() {
+    local HOST="${1-127.0.0.1}"
     echo "Waiting for Valkey Server to be ready"
     local timeout=$((SECONDS + STARTUP_TIMEOUT))
 
+    # shellcheck disable=SC2086
     until valkey-cli $common_args -p "${VALKEY_PORT:-6379}" ping; do
-        if (( SECONDS >= timeout )); then
-            echo "Valkey server at $host:$port did not start in $timeout seconds" >&2
+        if ((SECONDS >= timeout)); then
+            echo "Valkey server at ${HOST}:${VALKEY_PORT:-6379} did not start in $timeout seconds" >&2
             exit 1
         fi
         sleep 1
