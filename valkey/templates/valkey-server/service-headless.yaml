@@ -1,0 +1,21 @@
+{{- range $_index, $server := .Values.valkey.servers }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey-server-{{ $server.name }}
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  selector:
+    app.kubernetes.io/name: valkey
+    app.kubernetes.io/instance: valkey-{{ $server.name }}
+    app.kubernetes.io/component: valkey-server
+    app.kubernetes.io/part-of: valkey
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: 6379
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  {{- end }}

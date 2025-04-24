@@ -1,0 +1,32 @@
+#!/bin/bash
+set -eu
+
+# source the functions
+. /opt/valkey/entrypoint/functions
+
+wait_for_valkey
+
+RELOAD_INTERVAL=${RELOAD_INTERVAL:-360}
+running=true
+
+handle_sigterm() {
+    echo "Received SIGTERM, exiting"
+    running=false
+}
+
+trap handle_sigterm SIGTERM
+
+while $running; do
+
+    # Ensure that a SIGTERM causes a fast exit of this process
+    for _ in $(seq 1 $RELOAD_INTERVAL); do
+        if ! $running; then
+            exit 0
+        fi
+        sleep 1
+    done
+    echo "Reloading TLS certificates"
+
+    # We can connect to the local redis instance to reload the cert as this run on each valkey instance
+    valkey-cli $common_args --raw CONFIG GET tls-key-file | tail -n1 | head -c -1 | valkey-cli $common_args -x CONFIG SET tls-key-file
+done

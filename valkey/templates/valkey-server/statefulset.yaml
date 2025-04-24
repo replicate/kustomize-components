@@ -1,0 +1,260 @@
+{{- $required_sentinels := int .Values.sentinel.replicas }}
+{{- range $_index, $server := .Values.valkey.servers }}
+{{- $service_name := printf "valkey-server-%s" $server.name }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: valkey-{{ $server.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: valkey
+    app.kubernetes.io/instance: valkey-{{ $server.name }}
+    app.kubernetes.io/component: valkey-server
+    app.kubernetes.io/part-of: valkey
+spec:
+  serviceName: {{ $service_name }}
+  replicas: {{ default 2 $server.replicas | int }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+      app.kubernetes.io/instance: valkey-{{ $server.name }}
+      app.kubernetes.io/component: valkey-server
+      app.kubernetes.io/part-of: valkey
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: valkey
+        app.kubernetes.io/instance: valkey-{{ $server.name }}
+        app.kubernetes.io/component: valkey-server
+        app.kubernetes.io/part-of: valkey
+    spec:
+      securityContext:
+        fsGroup: 1000
+
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: valkey
+              app.kubernetes.io/instance: valkey-{{ $server.name }}
+              app.kubernetes.io/component: valkey-server
+              app.kubernetes.io/part-of: valkey
+          maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+
+      initContainers:
+      - name: valkey-configuration
+        image: alpine:latest
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.password_secret }}
+              key: password
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "dir /data/" >> /opt/valkey/etc/master.conf
+            echo "rename-command FLUSHDB \"\"" >> /opt/valkey/etc/master.conf
+            echo "rename-command FLUSHALL \"\"" >> /opt/valkey/etc/master.conf
+
+            echo "appendonly no" >> /opt/valkey/etc/valkey.conf
+            echo "save 3600 1 300 100 60 10000" >> /opt/valkey/etc/valkey.conf
+            echo "maxmemory-policy allkeys-lru" >> /opt/valkey/etc/valkey.conf
+            echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}.valkey.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
+            echo "requirepass ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
+            echo "primaryauth ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
+
+        volumeMounts:
+          - name: etc
+            mountPath: /opt/valkey/etc
+
+      containers:
+      - name: valkey-server
+
+        image: {{ default "valkey/valkey:8.1-alpine" $.Values.valkey.image }}
+        imagePullPolicy: IfNotPresent
+
+        args:
+        - --include /opt/valkey/etc/master.conf
+        - --include /opt/valkey/etc/valkey.conf
+        {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+        - --tls
+          - --tls-ca-file ${VALKEY_CACERT}
+          - --tls-cert-file ${VALKEY_CERT_FILE}
+        - --tls-key-file ${VALKEY_KEY_FILE}
+        {{- end }}
+
+        volumeMounts:
+          - name: data
+            mountPath: /data
+          - name: etc
+            mountPath: /opt/valkey/etc
+          {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+          - name: certs
+            mountPath: /opt/valkey/etc/certs
+          {{- end }}
+
+        resources:
+          {{- toYaml $server.resources | nindent 12 }}
+
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: VALKEY_NODE_TYPE
+          value: "valkey"
+        - name: VALKEY_NAME
+          value: {{ $server.name }}
+        - name: VALKEY_SERVICE_NAME
+          value: {{ $service_name }}
+        - name: VALKEY_SENTINEL_SERVICE_SRV
+          value: _sentinel._tcp.valkey-sentinel.valkey.svc.cluster.local
+        - name: VALKEY_REQUIRED_SENTINELS
+          value: "{{ int $required_sentinels }}"
+        - name: VALKEY_DOWN_AFTER_MILLISECONDS
+          value: "{{ default 3000 $server.down_after_milliseconds | int }}"
+        - name: VALKEY_FAILOVER_TIMEOUT
+          value: "{{ default 10000 $server.failover_timeout | int }}"
+        - name: VALKEY_PARALLEL_SYNCS
+          value: "{{ default 1 $server.parallel_syncs | int }}"
+        {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+        - name: VALKEY_TLS
+          value: "true"
+        - name: VALKEY_CACERT
+          value: /opt/valkey/etc/certs/ca.crt
+        - name: VALKEY_CERT_FILE
+          value: /opt/valkey/etc/certs/tls.crt
+        - name: VALKEY_KEY_FILE
+          value: /opt/valkey/etc/certs/tls.key
+        {{- end }}
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.password_secret }}
+              key: password
+        - name: REDISCLI_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.password_secret }}
+              key: password
+        - name: VALKEY_SENTINEL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.sentinel.password_secret }}
+              key: password
+
+        readinessProbe:
+          exec:
+            command: ["sh", "-c", "test -f /opt/valkey/etc/ready"]
+    
+      - name: redis-exporter
+        image: oliver006/redis_exporter:latest
+        command: 
+        - /bin/bash
+        - -c
+        - |
+          if [[ -f '/secrets/redis-password' ]]; then
+          export REDIS_PASSWORD=$(cat /secrets/redis-password)
+          fi
+          redis_exporter --skip-tls-verification=true
+        ports:
+          - containerPort: 9121
+            name: redis-exporter
+        env:
+          - name: REDIS_ALIAS
+            value: "redis"
+          - name: REDIS_ADDR
+            value: "rediss://localhost:6379"
+          - name: REDIS_USER
+            value: "default"
+          {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+          - name: REDIS_EXPORTER_TLA_CA_CERT_FILE
+            value: /opt/valkey/etc/certs/ca.crt
+          {{- end }}
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $server.password_secret }}
+                key: password
+          imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: metrics
+          timeoutSeconds: 5
+        name: metrics
+        ports:
+        - containerPort: 9121
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 150m
+            ephemeral-storage: 2Gi
+            memory: 192Mi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 50Mi
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 1001
+          runAsNonRoot: true
+          runAsUser: 1001
+          seLinuxOptions: {}
+          seccompProfile:
+            type: RuntimeDefault
+
+      volumes:
+      - name: etc
+        emptyDir: {}
+      {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+      - name: certs
+        secret:
+          secretName: valkey-server-{{ $server.name }}-tls
+      {{- end }}
+
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+    whenScaled: Delete
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ $server.storage.size }}
+{{- end }}

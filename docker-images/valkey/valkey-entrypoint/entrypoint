@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Start the replication coordinator script in the background if we are not a sentinel node
+[[ ${VALKEY_NODE_TYPE:-} != "sentinel" ]] && {
+    echo "Starting replication coordinator"
+    /bin/bash /opt/valkey/entrypoint/replication-coordinator &
+}
+
+# Start the TLS Reloader if we have TLS enabled
+[[ ${VALKEY_TLS_ENABLED:-} == "true" ]] && {
+    echo "Starting TLS Reloader"
+    /bin/bash /opt/valkey/entrypoint/reload-certs &
+}
+
+# Start the Valkey server
+echo "Starting Valkey server in ${VALKEY_NODE_TYPE:-valkey} mode"
+
+args=()
+if [[ ${VALKEY_NODE_TYPE:-} != "sentinel" ]]; then
+    args=( "${args[@]}" --user valkey )
+fi
+
+exec /usr/local/bin/docker-entrypoint.sh "${args[@]}" "$@"

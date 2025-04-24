@@ -1,0 +1,85 @@
+#!/bin/bash
+STARTUP_TIMEOUT=${STARTUP_TIMEOUT:-120}
+
+common_args="-e"
+export common_args
+
+if [ "${VALKEY_TLS_ENABLED:-}" == "true" ]; then
+    common_args="$common_args --tls"
+
+    if [ -e /srv/valkey-ca-bundle/ca-certs.crt ]; then
+        common_args="$common_args --cacert /srv/valkey-ca-bundle/ca-certs.crt"
+    fi
+fi
+
+run_sentinel_cmd() {
+    local sentinel_host="$1"
+    shift
+    local cmd_output
+
+    # shellcheck disable=SC2086
+    cmd_output=$(valkey-cli $common_args -h "$sentinel_host" -p 26379 sentinel "$@")
+
+    if [[ "$cmd_output" != "OK" ]]; then
+        echo "Sentinel command failed at $sentinel_host: $* => $cmd_output" >&2
+        return 1
+    fi
+}
+
+get_sentinel_quorum() {
+    local required="$1"
+
+    if ! [[ "$required" =~ ^[0-9]+$ ]]; then
+        echo "Invalid sentinel count, must be integer: $required" >&2
+        exit 1
+    fi
+
+    ((required <= 0)) && {
+        echo "Invalid sentinel count, must be positive non-zero: $required" >&2
+        exit 1
+    }
+
+    ((required /= 2))
+    ((required += 1))
+    echo "$required"
+}
+
+get_master_addr_by_name() {
+    local sentinel_host="$1"
+    local valkey_name="$2"
+
+    # shellcheck disable=SC2086
+    output=$(valkey-cli $common_args --json -h "$sentinel_host" -p 26379 sentinel get-master-addr-by-name "$valkey_name")
+    echo "$output"
+}
+
+wait_for_sentinel() {
+    local sentinel_host="$1"
+
+    echo "Waiting for Valkey Sentinel to be ready"
+    local timeout=$((SECONDS + STARTUP_TIMEOUT))
+
+    # shellcheck disable=SC2086
+    until valkey-cli $common_args -h "$sentinel_host" -p 26379 ping; do
+        if ((SECONDS >= timeout)); then
+            echo "Valkey sentinel at $sentinel_host:26379 did not start in $timeout seconds" >&2
+            exit 1
+        fi
+        sleep 1
+    done
+}
+
+wait_for_valkey() {
+    local HOST="${1-127.0.0.1}"
+    echo "Waiting for Valkey Server to be ready"
+    local timeout=$((SECONDS + STARTUP_TIMEOUT))
+
+    # shellcheck disable=SC2086
+    until valkey-cli $common_args -p "${VALKEY_PORT:-6379}" ping; do
+        if ((SECONDS >= timeout)); then
+            echo "Valkey server at ${HOST}:${VALKEY_PORT:-6379} did not start in $timeout seconds" >&2
+            exit 1
+        fi
+        sleep 1
+    done
+}

@@ -1,0 +1,23 @@
+{{- range $_index, $server := .Values.valkey.servers }}
+{{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: valkey-server-{{ $server.name }}-tls
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  secretName: {{ default (printf "valkey-server-%s-tls" $server.name) $server.tls.secretName }}
+  issuerRef:
+    name: issuer
+    kind: GoogleCASClusterIssuer
+    group: cas-issuer.jetstack.io
+  renewBefore: 8h
+  duration: 24h 
+  dnsNames:
+  - valkey-server-{{ $server.name }}
+  - valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}
+  - valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}.svc.cluster.local
+  - valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}.svc.cluster.local.
+{{- end }}
+{{- end }}
