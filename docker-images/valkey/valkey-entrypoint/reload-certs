@@ -2,6 +2,7 @@
 set -eu
 
 # source the functions
+# shellcheck source=/dev/null
 . /opt/valkey/entrypoint/functions
 
 wait_for_valkey
@@ -19,7 +20,7 @@ trap handle_sigterm SIGTERM
 while $running; do
 
     # Ensure that a SIGTERM causes a fast exit of this process
-    for _ in $(seq 1 $RELOAD_INTERVAL); do
+    for _ in $(seq 1 "${RELOAD_INTERVAL}"); do
         if ! $running; then
             exit 0
         fi
@@ -28,5 +29,6 @@ while $running; do
     echo "Reloading TLS certificates"
 
     # We can connect to the local redis instance to reload the cert as this run on each valkey instance
+    # shellcheck disable=SC2086,SC2154
     valkey-cli $common_args --raw CONFIG GET tls-key-file | tail -n1 | head -c -1 | valkey-cli $common_args -x CONFIG SET tls-key-file
 done

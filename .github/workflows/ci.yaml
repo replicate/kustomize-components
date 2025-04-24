@@ -25,3 +25,14 @@ jobs:
     with:
       image: valkey
       context: docker-images/valkey
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: luizm/action-sh-checker@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHFMT_OPTS: -i 4
+        with:
+          sh_checker_comment: true
