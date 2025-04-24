@@ -17,7 +17,7 @@ echo "Starting Valkey server in ${VALKEY_NODE_TYPE:-valkey} mode"
 
 args=()
 if [[ ${VALKEY_NODE_TYPE:-} != "sentinel" ]]; then
-    args=( "${args[@]}" --user valkey )
+    args=("${args[@]}" --user valkey)
 fi
 
 exec /usr/local/bin/docker-entrypoint.sh "${args[@]}" "$@"

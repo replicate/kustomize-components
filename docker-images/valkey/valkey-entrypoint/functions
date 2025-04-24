@@ -17,6 +17,9 @@ run_sentinel_cmd() {
     shift
     local cmd_output
 
+    export VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
+    export REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
+
     # shellcheck disable=SC2086
     cmd_output=$(valkey-cli $common_args -h "$sentinel_host" -p 26379 sentinel "$@")
 
@@ -48,6 +51,9 @@ get_master_addr_by_name() {
     local sentinel_host="$1"
     local valkey_name="$2"
 
+    export VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
+    export REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
+
     # shellcheck disable=SC2086
     output=$(valkey-cli $common_args --json -h "$sentinel_host" -p 26379 sentinel get-master-addr-by-name "$valkey_name")
     echo "$output"
@@ -55,6 +61,9 @@ get_master_addr_by_name() {
 
 wait_for_sentinel() {
     local sentinel_host="$1"
+
+    export VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
+    export REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
 
     echo "Waiting for Valkey Sentinel to be ready"
     local timeout=$((SECONDS + STARTUP_TIMEOUT))
