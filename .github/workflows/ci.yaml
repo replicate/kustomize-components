@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# Ensure only one workflow instance runs at a time. For branches other than the
+# default branch, cancel the pending jobs in the group. For the default branch,
+# queue them up. This avoids cancelling jobs that are in the middle of deploying
+# to production.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
+
+jobs:
+  build:
+    name: Build
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    uses: replicate/actions/.github/workflows/buildx.yml@main
+    with:
+      image: valkey
+      context: docker-images/valkey
