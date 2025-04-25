@@ -3,8 +3,10 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-if [[ "$(kubectl config current-context)" != "kind-kind" ]]; then
-    printf 'Refusing to run outside of "kind-kind" context\n' >&2
+CURRENT_CONTEXT="$(kubectl config current-context)"
+
+if [[ "${CURRENT_CONTEXT}" != "kind-kind" ]]; then
+    printf 'Refusing to run in "%s" context (expecting "kind-kind")\n' "${CURRENT_CONTEXT}" >&2
     exit 86
 fi
 
