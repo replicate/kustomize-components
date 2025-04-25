@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: valkey
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: valkey
+  name: valkey-sentinel-password
+type: Opaque
+data:
+  password: Ym9ndXNib2d1c2JvZ3Vz
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: valkey
+  name: valkey-server-omg-password
+type: Opaque
+data:
+  password: Ym9ndXNib2d1c2JvZ3Vz

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+docker buildx build \
+    -t kustomize-components/valkey:local \
+    -f docker-images/valkey/Dockerfile \
+    docker-images/valkey/

@@ -2,14 +2,14 @@ global:
   namespace: valkey
 
 sentinel:
-  image: valkey:replicate-latest
+  image: docker.io/kustomize-components/valkey:local
   storage:
     size: 100Mi
   replicas: 3
   password_secret: valkey-sentinel-password
 
 valkey:
-  image: valkey:replicate-latest
+  image: docker.io/kustomize-components/valkey:local
   servers:
   - name: testme
     password_secret: valkey-server-omg-password

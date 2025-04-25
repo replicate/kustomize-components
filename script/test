@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+if [[ "$(kubectl config current-context)" != "kind-kind" ]]; then
+    printf 'Refusing to run outside of "kind-kind" context\n' >&2
+    exit 86
+fi
+
+cleanup() {
+    kubectl delete -f script/.test-resources.yaml
+}
+
+trap cleanup QUIT TERM EXIT
+
+kind load docker-image docker.io/kustomize-components/valkey:local
+kubectl apply -f script/.test-resources.yaml
+uv run ct install \
+    --chart-dirs . \
+    --charts valkey \
+    --debug \
+    --helm-extra-args '--timeout=600s' \
+    --namespace valkey

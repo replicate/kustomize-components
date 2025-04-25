@@ -135,14 +135,7 @@ spec:
 
       - name: redis-exporter
         image: oliver006/redis_exporter:latest
-        command: 
-        - /bin/bash
-        - -c
-        - |
-          if [[ -f '/secrets/redis-password' ]]; then
-          export REDIS_PASSWORD=$(cat /secrets/redis-password)
-          fi
-          redis_exporter --skip-tls-verification=true
+        args: ['--skip-tls-verification=true']
         ports:
           - containerPort: 9121
             name: redis-exporter
