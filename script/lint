@@ -3,3 +3,4 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 shfmt -f . | xargs shellcheck
+uv run ct lint --all --validate-maintainers=false --chart-dirs .

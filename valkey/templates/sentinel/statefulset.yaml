@@ -162,7 +162,7 @@ spec:
               secretKeyRef:
                 name: {{ $.Values.sentinel.password_secret }}
                 key: password
-          imagePullPolicy: IfNotPresent
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 5
           initialDelaySeconds: 10
