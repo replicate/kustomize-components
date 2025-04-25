@@ -47,3 +47,26 @@ jobs:
       - uses: helm/chart-testing-action@v2
 
       - run: uv run ct lint --all --validate-maintainers=false --chart-dirs .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: azure/setup-helm@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - uses: helm/chart-testing-action@v2
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
+
+      - uses: docker/setup-buildx-action@v3
+
+      - run: script/build
+
+      - run: script/test
