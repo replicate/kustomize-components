@@ -5,15 +5,10 @@ cd "$(git rev-parse --show-toplevel)"
 
 CURRENT_CONTEXT="$(kubectl config current-context)"
 
-case "${CURRENT_CONTEXT}" in
-kind-kind | kind-chart-testing)
-    : this is fine
-    ;;
-*)
+if [[ "${CURRENT_CONTEXT}" != "kind-kind" ]]; then
     printf 'Refusing to run in "%s" context (expecting "kind-kind")\n' "${CURRENT_CONTEXT}" >&2
     exit 86
-    ;;
-esac
+fi
 
 cleanup() {
     kubectl delete -f script/.test-resources.yaml
