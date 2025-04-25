@@ -42,7 +42,7 @@ if [[ "${MASTER}" == "null" ]]; then
     [[ "${VALKEY_FAILOVER_TIMEOUT}" -ne "0" ]] && echo "Setting failover-timeout to ${VALKEY_FAILOVER_TIMEOUT}"
     [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]] && echo "Setting parallel-syncs to ${VALKEY_PARALLEL_SYNCS}"
     for SENTINEL in "${SENTINELS_LIST[@]}"; do
-        FQDN="${HOSTNAME}.${VALKEY_SERVICE_NAME}.valkey.svc.cluster.local"
+        FQDN="${HOSTNAME}.${VALKEY_SERVICE_NAME}.${NAMESPACE_NAME:-valkey}.svc.cluster.local"
         echo "Notifying Sentinel at ${SENTINEL} master of ${VALKEY_NAME} at '${FQDN}'"
         run_sentinel_cmd "${SENTINEL}" monitor "${VALKEY_NAME}" "${FQDN}" 6379 "${SENTINEL_QUORUM}"
         if [[ "${VALKEY_DOWN_AFTER_MILLISECONDS}" -ne "0" ]]; then
