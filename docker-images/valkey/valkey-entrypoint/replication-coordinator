@@ -36,12 +36,12 @@ if [[ "${MASTER}" == "null" ]]; then
     echo "Notifying all Sentinels"
 
     # Get the list of Sentinel IPs from SRV records
-    SENTINELS_LIST=$(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }')
+    SENTINELS_LIST=($(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }'))
     echo "Sentinel quorum: ${SENTINEL_QUORUM}"
     [[ "${VALKEY_DOWN_AFTER_MILLISECONDS}" -ne "0" ]] && echo "Setting down-after-milliseconds to ${VALKEY_DOWN_AFTER_MILLISECONDS}"
     [[ "${VALKEY_FAILOVER_TIMEOUT}" -ne "0" ]] && echo "Setting failover-timeout to ${VALKEY_FAILOVER_TIMEOUT}"
     [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]] && echo "Setting parallel-syncs to ${VALKEY_PARALLEL_SYNCS}"
-    for SENTINEL in ${SENTINELS_LIST}; do
+    for SENTINEL in "${SENTINELS_LIST[@]}"; do
         FQDN="${HOSTNAME}.${VALKEY_SERVICE_NAME}.valkey.svc.cluster.local"
         echo "Notifying Sentinel at ${SENTINEL} master of ${VALKEY_NAME} at '${FQDN}'"
         run_sentinel_cmd "${SENTINEL}" monitor "${VALKEY_NAME}" "${FQDN}" 6379 "${SENTINEL_QUORUM}"
@@ -54,6 +54,7 @@ if [[ "${MASTER}" == "null" ]]; then
         if [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]]; then
             run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" parallel-syncs "${VALKEY_PARALLEL_SYNCS}"
         fi
+        run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" auth-pass "${VALKEY_PASSWORD}"
     done
 else
     until [[ "${MASTER}" != "null" ]]; do
