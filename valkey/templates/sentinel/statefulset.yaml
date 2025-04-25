@@ -59,8 +59,9 @@ spec:
           if [ ! -f /data/sentinel.conf ]; then
             echo "sentinel resolve-hostnames yes" >> /data/sentinel.conf
             echo "sentinel announce-hostnames yes" >> /data/sentinel.conf
-            echo "sentinel announce-ip ${POD_NAME}.valkey-sentinel.valkey.svc.cluster.local" >> /data/sentinel.conf
+            echo "sentinel announce-ip ${POD_NAME}.valkey-sentinel.{{ $.Values.global.namespace }}.svc.cluster.local" >> /data/sentinel.conf
             echo "requirepass ${VALKEY_PASSWORD}" >> /data/sentinel.conf
+            echo "masterauth ${VALKEY_PASSWORD}" >> /data/sentinel.conf
             chown 999:1000 /data/sentinel.conf
           fi
 
