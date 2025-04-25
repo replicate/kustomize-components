@@ -20,8 +20,8 @@ if [[ "${MASTER}" == "null" ]]; then
     echo "No Master found, configuring self as master"
     while true; do
         REQUIRED_SENTINELS="${VALKEY_REQUIRED_SENTINELS}"
-        SENTINELS=$(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }' | sort -u)
-        SENTINEL_COUNT=$(echo "${SENTINELS}" | wc -l)
+        mapfile -t SENTINELS < <(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }' | sort -u)
+        SENTINEL_COUNT="${#SENTINELS[@]}"
         if ((SENTINEL_COUNT >= REQUIRED_SENTINELS)); then
             echo "Found ${SENTINEL_COUNT} Sentinels, proceeding with the setup."
             break
@@ -36,7 +36,7 @@ if [[ "${MASTER}" == "null" ]]; then
     echo "Notifying all Sentinels"
 
     # Get the list of Sentinel IPs from SRV records
-    SENTINELS_LIST=($(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }'))
+    mapfile -t SENTINELS_LIST < <(dig +short SRV "${VALKEY_SENTINEL_SERVICE_SRV}" | awk '{ print $4 }')
     echo "Sentinel quorum: ${SENTINEL_QUORUM}"
     [[ "${VALKEY_DOWN_AFTER_MILLISECONDS}" -ne "0" ]] && echo "Setting down-after-milliseconds to ${VALKEY_DOWN_AFTER_MILLISECONDS}"
     [[ "${VALKEY_FAILOVER_TIMEOUT}" -ne "0" ]] && echo "Setting failover-timeout to ${VALKEY_FAILOVER_TIMEOUT}"
