@@ -62,6 +62,8 @@ jobs:
       - uses: helm/chart-testing-action@v2
 
       - uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
 
       - uses: docker/setup-buildx-action@v3
 
