@@ -66,8 +66,9 @@ spec:
             echo "appendonly no" >> /opt/valkey/etc/valkey.conf
             echo "save 3600 1 300 100 60 10000" >> /opt/valkey/etc/valkey.conf
             echo "maxmemory-policy allkeys-lru" >> /opt/valkey/etc/valkey.conf
-            echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}.valkey.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
+            echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
             echo "requirepass ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
+            echo "masterauth ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
             echo "primaryauth ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
 
         volumeMounts:
@@ -115,6 +116,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: NAMESPACE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: VALKEY_NODE_TYPE
           value: "valkey"
         - name: VALKEY_NAME
@@ -122,7 +127,7 @@ spec:
         - name: VALKEY_SERVICE_NAME
           value: {{ $service_name }}
         - name: VALKEY_SENTINEL_SERVICE_SRV
-          value: _sentinel._tcp.valkey-sentinel.valkey.svc.cluster.local
+          value: _sentinel._tcp.valkey-sentinel.{{ $.Values.global.namespace }}.svc.cluster.local
         - name: VALKEY_REQUIRED_SENTINELS
           value: "{{ int $required_sentinels }}"
         - name: VALKEY_DOWN_AFTER_MILLISECONDS
