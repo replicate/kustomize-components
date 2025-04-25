@@ -30,9 +30,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: luizm/action-sh-checker@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SHFMT_OPTS: -i 4
         with:
           sh_checker_comment: true
+
+      - uses: azure/setup-helm@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - uses: helm/chart-testing-action@v2
+
+      - run: uv run ct lint --all --validate-maintainers=false --chart-dirs .
