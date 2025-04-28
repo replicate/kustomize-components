@@ -127,7 +127,7 @@ spec:
         - name: VALKEY_SERVICE_NAME
           value: valkey-server-{{ $server.name }}-{{ $.Release.Name }}
         - name: VALKEY_SENTINEL_SERVICE_SRV
-          value: _sentinel._tcp.valkey-sentinel-{{ $.Release.Name }}.{{ $.Release.Namespace }}.svc.cluster.local
+          value: _sentinel._tcp.valkey-sentinel-headless-{{ $.Release.Name }}.{{ $.Release.Namespace }}.svc.cluster.local
         - name: VALKEY_REQUIRED_SENTINELS
           value: "{{ int $required_sentinels }}"
         - name: VALKEY_DOWN_AFTER_MILLISECONDS
