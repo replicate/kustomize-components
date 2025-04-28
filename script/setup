@@ -17,7 +17,7 @@ if [[ -z "$(which shellcheck)" ]]; then
 fi
 
 if [[ -z "$(which ct)" ]]; then
-    echo "Install ct on your environment before continuing: https://github.com/helm/chart-testing"
+    echo "Install chart-testing on your environment before continuing: https://github.com/helm/chart-testing"
     exit 1
 fi
 
