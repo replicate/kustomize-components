@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cleanup() {
+    kubectl delete -f script/.test-resources.yaml
+}
+
+trap cleanup QUIT TERM EXIT
+
+# Set up test resources
+kind load docker-image docker.io/kustomize-components/valkey:local
+kubectl apply -f script/.test-resources.yaml
+helm install failover-test ./valkey \
+    --debug \
+    --timeout=600s \
+    --namespace valkey \
+    --atomic
+
+# Get the hostname for valkey to connect to
+VALKEY_SENTINEL_HOSTNAME="$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h 'valkey-sentinel-failover-test' -p 26379 -a bogusbogusbogus --json SENTINEL GET-MASTER-ADDR-BY-NAME omg)"
+if [[ "$VALKEY_SENTINEL_HOSTNAME" == "null" ]]; then
+    echo "COULD NOT FIND VALKEY SENTINEL HOSTNAME"
+    exit 1
+fi
+VALKEY_SENTINEL_HOSTNAME="$(echo "$VALKEY_SENTINEL_HOSTNAME" | jq -r '.[0]')"
+echo "Hostname before failover: $VALKEY_SENTINEL_HOSTNAME"
+
+# Set a value in valkey, then get the same value. This is just testing we have a valkey connection
+kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus SET key value
+TEST_VALUE="$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus GET key)"
+echo "Value before failover: $TEST_VALUE"
+if [[ "$TEST_VALUE" != "value" ]]; then
+    echo "UNEXPECTED VALUE FROM VALKEY"
+    exit 1
+fi
+
+# Failover the valkey primary - this simulates a primary node going offline
+kubectl exec -n valkey valkey-client-test -- valkey-cli -h 'valkey-sentinel-failover-test' -p 26379 -a bogusbogusbogus SENTINEL FAILOVER omg
+sleep 5 # TODO: make a poll for when it's available
+
+# Get the hostname for valkey to connect to - this one should be different than above since the primary should have rolled
+VALKEY_SENTINEL_HOSTNAME="$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h 'valkey-sentinel-failover-test' -p 26379 -a bogusbogusbogus --json SENTINEL GET-MASTER-ADDR-BY-NAME omg)"
+if [[ "$VALKEY_SENTINEL_HOSTNAME" == "null" ]]; then
+    echo "COULD NOT FIND VALKEY SENTINEL HOSTNAME"
+    exit 1
+fi
+VALKEY_SENTINEL_HOSTNAME="$(echo "$VALKEY_SENTINEL_HOSTNAME" | jq -r '.[0]')"
+echo "Hostname after failover: $VALKEY_SENTINEL_HOSTNAME"
+
+# Set a value in valkey, then get the same value. This is just testing we have a valkey connection to the new primary
+kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus SET key value2
+TEST_VALUE_2=$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus GET key)
+echo "Value after failover: $TEST_VALUE_2"
+if [[ "$TEST_VALUE_2" != "value2" ]]; then
+    echo "UNEXPECTED VALUE FROM VALKEY AFTER FAILOVER"
+    exit 1
+fi

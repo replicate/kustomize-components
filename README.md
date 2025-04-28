@@ -23,3 +23,4 @@ And you will also need:
 - [kind](https://kind.sigs.k8s.io/)
 - [shfmt](https://github.com/mvdan/sh)
 - [shellcheck](https://www.shellcheck.net/)
+- [ct](https://github.com/helm/chart-testing)
