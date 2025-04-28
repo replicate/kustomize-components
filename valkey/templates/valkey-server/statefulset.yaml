@@ -1,32 +1,30 @@
 {{- $required_sentinels := int .Values.sentinel.replicas }}
 {{- range $_index, $server := .Values.valkey.servers }}
-{{- $service_name := printf "valkey-server-%s" $server.name }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: valkey-{{ $server.name }}
-  namespace: {{ $.Values.global.namespace }}
+  name: valkey-{{ $server.name }}-{{ $.Release.Name }}
   labels:
-    app.kubernetes.io/name: valkey
-    app.kubernetes.io/instance: valkey-{{ $server.name }}
     app.kubernetes.io/component: valkey-server
+    app.kubernetes.io/instance: {{ $server.name }}-{{ $.Release.Name }}
+    app.kubernetes.io/name: valkey
     app.kubernetes.io/part-of: valkey
 spec:
-  serviceName: {{ $service_name }}
+  serviceName: valkey-server-{{ $server.name }}-{{ $.Release.Name }}
   replicas: {{ default 2 $server.replicas | int }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: valkey
-      app.kubernetes.io/instance: valkey-{{ $server.name }}
       app.kubernetes.io/component: valkey-server
+      app.kubernetes.io/instance: {{ $server.name }}-{{ $.Release.Name }}
+      app.kubernetes.io/name: valkey
       app.kubernetes.io/part-of: valkey
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: valkey
-        app.kubernetes.io/instance: valkey-{{ $server.name }}
         app.kubernetes.io/component: valkey-server
+        app.kubernetes.io/instance: {{ $server.name }}-{{ $.Release.Name }}
+        app.kubernetes.io/name: valkey
         app.kubernetes.io/part-of: valkey
     spec:
       securityContext:
@@ -35,9 +33,9 @@ spec:
       topologySpreadConstraints:
         - labelSelector:
             matchLabels:
-              app.kubernetes.io/name: valkey
-              app.kubernetes.io/instance: valkey-{{ $server.name }}
               app.kubernetes.io/component: valkey-server
+              app.kubernetes.io/instance: {{ $server.name }}-{{ $.Release.Name }}
+              app.kubernetes.io/name: valkey
               app.kubernetes.io/part-of: valkey
           maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -66,7 +64,7 @@ spec:
             echo "appendonly no" >> /opt/valkey/etc/valkey.conf
             echo "save 3600 1 300 100 60 10000" >> /opt/valkey/etc/valkey.conf
             echo "maxmemory-policy allkeys-lru" >> /opt/valkey/etc/valkey.conf
-            echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
+            echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}-{{ $.Release.Name }}.{{ $.Release.Namespace }}.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
             echo "requirepass ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
             echo "masterauth ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
             echo "primaryauth ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
@@ -124,10 +122,12 @@ spec:
           value: "valkey"
         - name: VALKEY_NAME
           value: {{ $server.name }}
+        - name: VALKEY_SENTINEL_NAME
+          value: valkey-sentinel-{{ $.Release.Name }}
         - name: VALKEY_SERVICE_NAME
-          value: {{ $service_name }}
+          value: valkey-server-{{ $server.name }}-{{ $.Release.Name }}
         - name: VALKEY_SENTINEL_SERVICE_SRV
-          value: _sentinel._tcp.valkey-sentinel.{{ $.Values.global.namespace }}.svc.cluster.local
+          value: _sentinel._tcp.valkey-sentinel-{{ $.Release.Name }}.{{ $.Release.Namespace }}.svc.cluster.local
         - name: VALKEY_REQUIRED_SENTINELS
           value: "{{ int $required_sentinels }}"
         - name: VALKEY_DOWN_AFTER_MILLISECONDS
@@ -240,7 +240,7 @@ spec:
       {{- if and (hasKey $server "tls") (hasKey $server.tls "enabled") (eq $server.tls.enabled true) }}
       - name: certs
         secret:
-          secretName: valkey-server-{{ $server.name }}-tls
+          secretName: valkey-server-tls-{{ $server.name }}-{{ $.Release.Name }}
       {{- end }}
 
   persistentVolumeClaimRetentionPolicy:

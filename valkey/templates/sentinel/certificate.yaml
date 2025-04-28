@@ -3,8 +3,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: valkey-sentinel-tls
-  namespace: {{ $.Values.global.namespace }}
+  name: valkey-sentinel-tls-{{ .Release.Name }}
 spec:
   secretName: {{ default "valkey-sentinel-tls" $.Values.sentinel.tls.secretName }}
   issuerRef:
@@ -14,8 +13,8 @@ spec:
   renewBefore: 8h
   duration: 24h 
   dnsNames:
-  - valkey-sentinel
-  - valkey-sentinel.{{ $.Values.global.namespace }}
-  - valkey-sentinel.{{ $.Values.global.namespace }}.svc.cluster.local
-  - valkey-sentinel.{{ $.Values.global.namespace }}.svc.cluster.local.
+  - valkey-sentinel-{{ .Release.Name }}
+  - valkey-sentinel-{{ .Release.Name }}.{{ .Release.Namespace }}
+  - valkey-sentinel-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+  - valkey-sentinel-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local.
 {{- end }}

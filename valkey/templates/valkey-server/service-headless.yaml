@@ -3,13 +3,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: valkey-server-{{ $server.name }}
-  namespace: {{ $.Values.global.namespace }}
+  name: valkey-server-{{ $server.name }}-{{ $.Release.Name }}
 spec:
   selector:
-    app.kubernetes.io/name: valkey
-    app.kubernetes.io/instance: valkey-{{ $server.name }}
     app.kubernetes.io/component: valkey-server
+    app.kubernetes.io/instance: {{ $server.name }}-{{ $.Release.Name }}
+    app.kubernetes.io/name: valkey
     app.kubernetes.io/part-of: valkey
   ports:
     - name: valkey
@@ -18,4 +17,4 @@ spec:
   type: ClusterIP
   clusterIP: None
   publishNotReadyAddresses: true
-  {{- end }}
+{{- end }}
