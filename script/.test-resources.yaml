@@ -21,3 +21,24 @@ metadata:
 type: Opaque
 data:
   password: Ym9ndXNib2d1c2JvZ3Vz
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: valkey
+  name: valkey-client-test
+spec:
+  containers:
+    - env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: valkey-server-omg-password
+      name: valkey-client-test
+      image: valkey/valkey:8.1-alpine
+      resources:
+        limits:
+          cpu: "1"
+          memory: 100Mi
+      command: [sleep, "3600"]

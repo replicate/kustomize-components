@@ -1,6 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ -z "$(which kind)" ]]; then
+    echo "Install kind on your environment before continuing: https://kind.sigs.k8s.io/"
+    exit 1
+fi
+
+if [[ -z "$(which shfmt)" ]]; then
+    echo "Install shfmt on your environment before continuing: https://github.com/mvdan/sh"
+    exit 1
+fi
+
+if [[ -z "$(which shellcheck)" ]]; then
+    echo "Install shellcheck on your environment before continuing: https://www.shellcheck.net/"
+    exit 1
+fi
+
+if [[ -z "$(which ct)" ]]; then
+    echo "Install chart-testing on your environment before continuing: https://github.com/helm/chart-testing"
+    exit 1
+fi
+
 cd "$(git rev-parse --show-toplevel)"
 uv venv --allow-existing
 uv pip install -r requirements.txt

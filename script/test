@@ -10,17 +10,5 @@ if [[ "${CURRENT_CONTEXT}" != "kind-kind" ]]; then
     exit 86
 fi
 
-cleanup() {
-    kubectl delete -f script/.test-resources.yaml
-}
-
-trap cleanup QUIT TERM EXIT
-
-kind load docker-image docker.io/kustomize-components/valkey:local
-kubectl apply -f script/.test-resources.yaml
-uv run ct install \
-    --chart-dirs . \
-    --charts valkey \
-    --debug \
-    --helm-extra-args '--timeout=600s' \
-    --namespace valkey
+./script/test-smoke
+./script/test-failover
