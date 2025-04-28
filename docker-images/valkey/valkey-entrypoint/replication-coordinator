@@ -8,12 +8,12 @@ set -euo pipefail
 wait_for_valkey
 
 echo "Waiting for Valkey Sentinel to be ready"
-wait_for_sentinel "valkey-sentinel" "26379"
+wait_for_sentinel "${VALKEY_SENTINEL_NAME}" "26379"
 
 SENTINEL_QUORUM=$(get_sentinel_quorum "${VALKEY_REQUIRED_SENTINELS}")
 
 echo "Discovering Valkey Master via Sentinel"
-MASTER=$(get_master_addr_by_name "valkey-sentinel" "${VALKEY_NAME}")
+MASTER=$(get_master_addr_by_name "${VALKEY_SENTINEL_NAME}" "${VALKEY_NAME}")
 
 # StatefulSets only start one pod at a time, so we can safely assume if there is no master, we are the first pod
 if [[ "${MASTER}" == "null" ]]; then
@@ -60,7 +60,7 @@ else
     until [[ "${MASTER}" != "null" ]]; do
         sleep 1
         echo "No Master found, attempting to discover it via Sentinel"
-        MASTER=$(get_master_addr_by_name "valkey-sentinel" "${VALKEY_NAME}")
+        MASTER=$(get_master_addr_by_name "${VALKEY_SENTINEL_NAME}" "${VALKEY_NAME}")
     done
     MASTER_ADDR=$(echo "${MASTER}" | jq -r '.[0]')
     MASTER_PORT=$(echo "${MASTER}" | jq -r '.[1]')

@@ -4,10 +4,9 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: valkey-server-{{ $server.name }}-tls
-  namespace: {{ $.Values.global.namespace }}
+  name: valkey-server-tls-{{ $server.name }}-{{ .Release.Name }}
 spec:
-  secretName: {{ default (printf "valkey-server-%s-tls" $server.name) $server.tls.secretName }}
+  secretName: {{ default (printf "valkey-server-tls-%s-%s" $server.name .Release.Name) $server.tls.secretName }}
   issuerRef:
     name: issuer
     kind: GoogleCASClusterIssuer
@@ -15,9 +14,9 @@ spec:
   renewBefore: 8h
   duration: 24h 
   dnsNames:
-  - valkey-server-{{ $server.name }}
-  - valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}
-  - valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}.svc.cluster.local
-  - valkey-server-{{ $server.name }}.{{ $.Values.global.namespace }}.svc.cluster.local.
+  - valkey-server-{{ $server.name }}-{{ .Release.Name }}
+  - valkey-server-{{ $server.name }}-{{ .Release.Name }}.{{ .Release.Namespace }}
+  - valkey-server-{{ $server.name }}-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+  - valkey-server-{{ $server.name }}-{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local.
 {{- end }}
 {{- end }}
