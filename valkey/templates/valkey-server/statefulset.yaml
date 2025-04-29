@@ -197,11 +197,6 @@ spec:
           tcpSocket:
             port: metrics
           timeoutSeconds: 5
-        name: metrics
-        ports:
-        - containerPort: 9121
-          name: metrics
-          protocol: TCP
         readinessProbe:
           failureThreshold: 3
           httpGet:
