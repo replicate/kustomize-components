@@ -166,12 +166,8 @@ spec:
           exec:
             command: ["sh", "-c", "test -f /opt/valkey/etc/ready"]
     
-      - name: redis-exporter
-        image: oliver006/redis_exporter:latest
+      - image: oliver006/redis_exporter:latest
         args: ['--skip-tls-verification=true']
-        ports:
-          - containerPort: 9121
-            name: redis-exporter
         env:
           - name: REDIS_ALIAS
             value: "redis"
@@ -197,6 +193,11 @@ spec:
           tcpSocket:
             port: metrics
           timeoutSeconds: 5
+        name: metrics
+        ports:
+        - containerPort: 9121
+          name: metrics
+          protocol: TCP
         readinessProbe:
           failureThreshold: 3
           httpGet:
