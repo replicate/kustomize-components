@@ -45,6 +45,7 @@ if [[ "${MASTER}" == "null" ]]; then
         FQDN="${HOSTNAME}.${VALKEY_SERVICE_NAME}.${NAMESPACE_NAME:-valkey}.svc.cluster.local"
         echo "Notifying Sentinel at ${SENTINEL} master of ${VALKEY_NAME} at '${FQDN}'"
         run_sentinel_cmd "${SENTINEL}" monitor "${VALKEY_NAME}" "${FQDN}" 6379 "${SENTINEL_QUORUM}"
+        run_sentinel_cmd "${SENTINEL}" auth-pass "${VALKEY_NAME}" "${VALKEY_PASSWORD}"
         if [[ "${VALKEY_DOWN_AFTER_MILLISECONDS}" -ne "0" ]]; then
             run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" down-after-milliseconds "${VALKEY_DOWN_AFTER_MILLISECONDS}"
         fi
@@ -54,7 +55,6 @@ if [[ "${MASTER}" == "null" ]]; then
         if [[ "${VALKEY_PARALLEL_SYNCS}" -ne "0" ]]; then
             run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" parallel-syncs "${VALKEY_PARALLEL_SYNCS}"
         fi
-        run_sentinel_cmd "${SENTINEL}" set "${VALKEY_NAME}" auth-pass "${VALKEY_PASSWORD}"
     done
 else
     until [[ "${MASTER}" != "null" ]]; do
