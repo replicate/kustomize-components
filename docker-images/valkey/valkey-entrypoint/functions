@@ -17,11 +17,8 @@ run_sentinel_cmd() {
     shift
     local cmd_output
 
-    export VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
-    export REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
-
     # shellcheck disable=SC2086
-    cmd_output=$(valkey-cli $common_args -h "$sentinel_host" -p 26379 sentinel "$@")
+    cmd_output=$(REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}" valkey-cli $common_args -h "$sentinel_host" -p 26379 sentinel "$@")
 
     if [[ "$cmd_output" != "OK" ]]; then
         echo "Sentinel command failed at $sentinel_host: $* => $cmd_output" >&2
@@ -51,25 +48,19 @@ get_master_addr_by_name() {
     local sentinel_host="$1"
     local valkey_name="$2"
 
-    export VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
-    export REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
-
     # shellcheck disable=SC2086
-    output=$(valkey-cli $common_args --json -h "$sentinel_host" -p 26379 sentinel get-master-addr-by-name "$valkey_name")
+    output=$(REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}" valkey-cli $common_args --json -h "$sentinel_host" -p 26379 sentinel get-master-addr-by-name "$valkey_name")
     echo "$output"
 }
 
 wait_for_sentinel() {
     local sentinel_host="$1"
 
-    export VALKEY_PASSWORD="${VALKEY_SENTINEL_PASSWORD:-}"
-    export REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}"
-
     echo "Waiting for Valkey Sentinel to be ready"
     local timeout=$((SECONDS + STARTUP_TIMEOUT))
 
     # shellcheck disable=SC2086
-    until valkey-cli $common_args -h "$sentinel_host" -p 26379 ping; do
+    until REDISCLI_AUTH="${VALKEY_SENTINEL_PASSWORD:-}" valkey-cli $common_args -h "$sentinel_host" -p 26379 ping; do
         if ((SECONDS >= timeout)); then
             echo "Valkey sentinel at $sentinel_host:26379 did not start in $timeout seconds" >&2
             exit 1

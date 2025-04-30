@@ -20,7 +20,7 @@ metadata:
   name: valkey-server-omg-password
 type: Opaque
 data:
-  password: Ym9ndXNib2d1c2JvZ3Vz
+  password: Ym9ndXNpc2xpZmU=
 ---
 apiVersion: v1
 kind: Pod

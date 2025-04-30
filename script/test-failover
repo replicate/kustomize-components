@@ -26,8 +26,8 @@ VALKEY_SENTINEL_HOSTNAME="$(echo "$VALKEY_SENTINEL_HOSTNAME" | jq -r '.[0]')"
 echo "Hostname before failover: $VALKEY_SENTINEL_HOSTNAME"
 
 # Set a value in valkey, then get the same value. This is just testing we have a valkey connection
-kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus SET key value
-TEST_VALUE="$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus GET key)"
+kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusislife SET key value
+TEST_VALUE="$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusislife GET key)"
 echo "Value before failover: $TEST_VALUE"
 if [[ "$TEST_VALUE" != "value" ]]; then
     echo "UNEXPECTED VALUE FROM VALKEY"
@@ -48,8 +48,8 @@ VALKEY_SENTINEL_HOSTNAME="$(echo "$VALKEY_SENTINEL_HOSTNAME" | jq -r '.[0]')"
 echo "Hostname after failover: $VALKEY_SENTINEL_HOSTNAME"
 
 # Set a value in valkey, then get the same value. This is just testing we have a valkey connection to the new primary
-kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus SET key value2
-TEST_VALUE_2=$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusbogusbogus GET key)
+kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusislife SET key value2
+TEST_VALUE_2=$(kubectl exec -n valkey valkey-client-test -- valkey-cli -h "$VALKEY_SENTINEL_HOSTNAME" -a bogusislife GET key)
 echo "Value after failover: $TEST_VALUE_2"
 if [[ "$TEST_VALUE_2" != "value2" ]]; then
     echo "UNEXPECTED VALUE FROM VALKEY AFTER FAILOVER"
