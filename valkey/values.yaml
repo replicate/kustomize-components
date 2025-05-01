@@ -11,6 +11,7 @@ valkey:
   - name: testme
     password_secret: valkey-server-omg-password
     replicas: 2
+    maxmemory: 95mb
     storage:
       size: 200Mi
     resources:
@@ -23,6 +24,7 @@ valkey:
     failover_timeout: 10000
     parallel_syncs: 1
     password_secret: valkey-server-omg-password
+    maxmemory: 95mb
     storage:
       size: 200Mi
     resources:
