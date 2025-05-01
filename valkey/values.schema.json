@@ -65,6 +65,9 @@
                                 },
                                 "type": "object"
                             },
+                            "maxmemory": {
+                                "type": "string"
+                            },
                             "storage": {
                                 "properties": {
                                     "size": {

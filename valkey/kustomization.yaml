@@ -1,30 +1,32 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Use the local Helm chart
-helmCharts:
-- name: valkey
-  releaseName: valkey
-  # Remove hardcoded valuesFile so values can be provided by the caller
-  includeCRDs: false
-  version: 0.0.0  # Since this is a local chart, version doesn't matter
-  repo: .         # Use the local directory
+# Instead of using helmCharts, we'll directly include the template resources
+resources:
+- templates/valkey-server/certificate.yaml
+- templates/valkey-server/service-headless.yaml
+- templates/valkey-server/statefulset.yaml
+- templates/sentinel/certificate.yaml
+- templates/sentinel/service-headless.yaml
+- templates/sentinel/service.yaml
+- templates/sentinel/statefulset.yaml
 
-# Default values that can be overridden by the caller
-configMapGenerator:
-- name: valkey-values
-  files:
-  - values.yaml
-
-# Configuration for the helm chart
-replacements:
-- source:
+# Configuration for the templates
+vars:
+- name: VALKEY_VALUES
+  objref:
     kind: ConfigMap
     name: valkey-values
-    fieldPath: data.values\.yaml
-  targets:
-  - select:
-      kind: HelmChart
-      name: valkey
-    fieldPaths:
-    - valuesInline
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.values\.yaml
+
+transformers:
+- |-
+  apiVersion: builtin
+  kind: ValueTransformerPlugin
+  metadata:
+    name: ValueTransformer
+  argsOneLiner: true
+  values:
+    valuesData: $(VALKEY_VALUES)
