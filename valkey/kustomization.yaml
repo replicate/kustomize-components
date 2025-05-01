@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Use the local Helm chart
+helmCharts:
+- name: valkey
+  releaseName: valkey
+  # Remove hardcoded valuesFile so values can be provided by the caller
+  includeCRDs: false
+  version: 0.0.0  # Since this is a local chart, version doesn't matter
+  repo: .         # Use the local directory
+
+# Default values that can be overridden by the caller
+configMapGenerator:
+- name: valkey-values
+  files:
+  - values.yaml
+
+# Configuration for the helm chart
+replacements:
+- source:
+    kind: ConfigMap
+    name: valkey-values
+    fieldPath: data.values\.yaml
+  targets:
+  - select:
+      kind: HelmChart
+      name: valkey
+    fieldPaths:
+    - valuesInline
