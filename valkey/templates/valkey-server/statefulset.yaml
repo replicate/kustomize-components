@@ -60,9 +60,9 @@ spec:
             echo "dir /data/" >> /opt/valkey/etc/master.conf
             echo "rename-command FLUSHDB \"\"" >> /opt/valkey/etc/master.conf
             echo "rename-command FLUSHALL \"\"" >> /opt/valkey/etc/master.conf
-
             echo "appendonly no" >> /opt/valkey/etc/valkey.conf
             echo "save 3600 1 300 100 60 10000" >> /opt/valkey/etc/valkey.conf
+            echo "maxmemory {{ $server.maxmemory }}" >> /opt/valkey/etc/valkey.conf
             echo "maxmemory-policy allkeys-lru" >> /opt/valkey/etc/valkey.conf
             echo "replica-announce-ip ${POD_NAME}.valkey-server-{{ $server.name }}-{{ $.Release.Name }}.{{ $.Release.Namespace }}.svc.cluster.local" >> /opt/valkey/etc/valkey.conf
             echo "requirepass ${VALKEY_PASSWORD}" >> /opt/valkey/etc/valkey.conf
